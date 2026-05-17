@@ -8,6 +8,7 @@ import { AuthValidation } from "./auth.validation";
 
 const router = express.Router();
 
+// Register a new user
 router.post(
   "/register",
 
@@ -15,5 +16,18 @@ router.post(
 
   AuthController.registerUser,
 );
+
+// Login an existing user
+router.post(
+  "/login",
+  validateRequest(AuthValidation.loginValidationSchema),
+  AuthController.loginUser,
+);
+
+// Refresh token
+router.post("/refresh-token", AuthController.refreshToken);
+
+// Logout user
+router.post("/logout", AuthController.logoutUser);
 
 export const AuthRoutes = router;

@@ -1,5 +1,6 @@
 import type { Prisma } from "../../../../generated/prisma/client";
 import { prisma } from "../../../prisma/prisma";
+import QueryBuilder from "../../builder/QueryBuilder";
 import AppError from "../../errors/AppError";
 
 const createUser = async (payload: { name?: string; email: string }) => {
@@ -20,54 +21,80 @@ const createUser = async (payload: { name?: string; email: string }) => {
 };
 
 const getAllUsers = async (query: Record<string, unknown>) => {
-  const searchTerm = query.searchTerm as string;
+  console.log("hit get all users");
 
-  const page = Number(query.page) || 1;
-
-  const limit = Number(query.limit) || 5;
-
-  const skip = (page - 1) * limit;
-
-  const whereConditions: Prisma.UserWhereInput = searchTerm
-    ? {
-        OR: [
-          {
-            name: {
-              contains: searchTerm,
-              mode: "insensitive",
-            },
-          },
-
-          {
-            email: {
-              contains: searchTerm,
-              mode: "insensitive",
-            },
-          },
-        ],
-      }
-    : {};
-
-  const result = await prisma.user.findMany({
-    where: whereConditions,
-    skip,
-    take: limit,
-  });
-
-  const total = await prisma.user.count({
-    where: whereConditions,
-  });
-
-  return {
-    meta: {
-      page,
-      limit,
-      total,
+  const queryBuilder = new QueryBuilder(
+    {
+      where: {
+        isDeleted: false,
+      },
     },
 
-    data: result,
-  };
+    query,
+  )
+    .search(["name", "email"])
+    .paginate()
+    .sort()
+    .fields();
+
+  console.log("query builder", queryBuilder);
+
+  const result = await prisma.user.findMany(queryBuilder.modelQuery);
+  console.log("result", result);
+
+  return result;
 };
+
+//without query builder
+// const getAllUsers = async (query: Record<string, unknown>) => {
+//   const searchTerm = query.searchTerm as string;
+
+//   const page = Number(query.page) || 1;
+
+//   const limit = Number(query.limit) || 5;
+
+//   const skip = (page - 1) * limit;
+
+//   const whereConditions: Prisma.UserWhereInput = searchTerm
+//     ? {
+//         OR: [
+//           {
+//             name: {
+//               contains: searchTerm,
+//               mode: "insensitive",
+//             },
+//           },
+
+//           {
+//             email: {
+//               contains: searchTerm,
+//               mode: "insensitive",
+//             },
+//           },
+//         ],
+//       }
+//     : {};
+
+//   const result = await prisma.user.findMany({
+//     where: whereConditions,
+//     skip,
+//     take: limit,
+//   });
+
+//   const total = await prisma.user.count({
+//     where: whereConditions,
+//   });
+
+//   return {
+//     meta: {
+//       page,
+//       limit,
+//       total,
+//     },
+
+//     data: result,
+//   };
+// };
 
 const getSingleUser = async (id: number) => {
   const result = await prisma.user.findUnique({

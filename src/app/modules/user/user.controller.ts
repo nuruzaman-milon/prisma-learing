@@ -57,12 +57,22 @@ const deleteUser = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const getMe = catchAsync(async (req: Request, res: Response) => {
+  const result = req.user;
+  res.status(200).json({
+    success: true,
+    message: "User fetched successfully",
+    data: result,
+  });
+});
+
 export const UserController = {
   createUser,
   getAllUsers,
   getSingleUser,
   updateUser,
   deleteUser,
+  getMe,
 };
 
 // notes

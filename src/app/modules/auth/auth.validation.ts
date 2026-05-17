@@ -10,6 +10,14 @@ const registerValidationSchema = z.object({
   }),
 });
 
+const loginValidationSchema = z.object({
+  body: z.object({
+    email: z.email(),
+    password: z.string().min(6),
+  }),
+});
+
 export const AuthValidation = {
   registerValidationSchema,
+  loginValidationSchema,
 };
