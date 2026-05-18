@@ -12,14 +12,30 @@ datasource db {
   provider = "postgresql"
 }
 
-model User { 
-  id    Int     @id @default(autoincrement()) 
-  email String  @unique
-  password   String @default("") 
-  name  String?
-  role  String   @default("USER")
-  isDeleted Boolean @default(false) 
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum AuthProvider {
+  CREDENTIALS
+  GOOGLE
+  FACEBOOK
+  GITHUB
+}
+
+model User {
+  id            Int           @id @default(autoincrement())
+  email         String        @unique
+  password String?
+  authProvider  AuthProvider  @default(CREDENTIALS)
+  providerId    String?
+  name          String?
+  role          String        @default("USER")
+  profile       Profile?
   posts Post[]
+  isDeleted Boolean @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt @default(now())
 }
@@ -31,4 +47,25 @@ model Post {
   published Boolean @default(false) 
   author    User    @relation(fields: [authorId], references: [id]) 
   authorId  Int
+}
+
+model Profile {
+  id                  Int       @id @default(autoincrement())
+  bio                 String?
+  phoneNumber         String?
+  address             String?
+  city                String?
+  country             String?
+  profession          String?
+  profilePhoto        String?
+  website             String?
+  github              String?
+  linkedin            String?
+  dateOfBirth         DateTime?
+  gender              Gender?
+  isProfileCompleted  Boolean   @default(false)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt @default(now())
+  userId              Int       @unique
+  user                User      @relation(fields: [userId], references: [id])
 }

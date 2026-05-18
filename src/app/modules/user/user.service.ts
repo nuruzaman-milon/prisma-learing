@@ -3,18 +3,59 @@ import { prisma } from "../../../prisma/prisma";
 import QueryBuilder from "../../builder/QueryBuilder";
 import AppError from "../../errors/AppError";
 
-const createUser = async (payload: { name?: string; email: string }) => {
-  const isUserExists = await prisma.user.findUnique({
-    where: {
-      email: payload.email,
-    },
-  });
+// const createUser = async (payload: { name?: string; email: string }) => {
+//   const isUserExists = await prisma.user.findUnique({
+//     where: {
+//       email: payload.email,
+//     },
+//   });
 
-  if (isUserExists) {
-    throw new AppError(409, "Email already exists");
-  }
-  const result = await prisma.user.create({
-    data: payload,
+//   if (isUserExists) {
+//     throw new AppError(409, "Email already exists");
+//   }
+//   const result = await prisma.user.create({
+//     data: payload,
+//   });
+
+//   return result;
+// };
+
+const createUser = async (payload: {
+  name?: string;
+  email: string;
+  role?: string;
+  profile?: {
+    bio?: string;
+  };
+}) => {
+  const result = await prisma.$transaction(async (tx) => {
+    const isUserExists = await tx.user.findUnique({
+      where: {
+        email: payload.email,
+      },
+    });
+    if (isUserExists) {
+      throw new AppError(409, "Email already exists");
+    }
+    const user = await tx.user.create({
+      data: {
+        name: payload.name || "",
+        email: payload.email,
+        role: payload.role || "user",
+      },
+    });
+
+    const profile = await tx.profile.create({
+      data: {
+        bio: payload.profile?.bio || "Developer",
+        userId: user.id,
+      },
+    });
+
+    return {
+      user,
+      profile,
+    };
   });
 
   return result;

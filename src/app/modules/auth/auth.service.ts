@@ -3,8 +3,10 @@ import jwt, { type JwtPayload } from "jsonwebtoken";
 
 import AppError from "../../errors/AppError";
 import { prisma } from "../../../prisma/prisma";
+import type { AuthProvider } from "../../../../generated/prisma/enums";
+import { generateUserTokens } from "../../utils/generateUsersTokens";
 
-const registerUser = async (payload: {
+const registerUserWithCredentials = async (payload: {
   name?: string;
   email: string;
   password: string;
@@ -22,22 +24,28 @@ const registerUser = async (payload: {
   // Hash Password
   const hashedPassword = await bcrypt.hash(payload.password, 10);
 
-  console.log("hashed password", hashedPassword);
-
   const result = await prisma.user.create({
     data: {
-      name: payload.name,
+      name: payload.name || "",
       email: payload.email,
       password: hashedPassword,
+      authProvider: "CREDENTIALS",
+      profile: {
+        create: {},
+      },
+    },
+    include: {
+      profile: true,
     },
   });
-
-  console.log("result for register", result);
 
   return result;
 };
 
-const loginUser = async (payload: { email: string; password: string }) => {
+const loginUserWithCredentials = async (payload: {
+  email: string;
+  password: string;
+}) => {
   const { email, password } = payload;
   const authSecret = process.env.JWT_ACCESS_SECRET || "my_super_key";
   const refreshAuthSecret = process.env.JWT_REFRESH_SECRET || "my_super_key";
@@ -84,6 +92,50 @@ const loginUser = async (payload: { email: string; password: string }) => {
   };
 };
 
+const loginOrRegisterUserWithSocials = async (payload: {
+  name?: string;
+  email: string;
+  authProvider: AuthProvider;
+  providerId: string;
+}) => {
+  let user = await prisma.user.findUnique({
+    where: {
+      email: payload.email,
+    },
+  });
+
+  // Create user if not exists
+  if (!user) {
+    user = await prisma.user.create({
+      data: {
+        name: payload.name || null,
+
+        email: payload.email,
+
+        authProvider: payload.authProvider,
+
+        providerId: payload.providerId,
+
+        profile: {
+          create: {},
+        },
+      },
+
+      include: {
+        profile: true,
+      },
+    });
+  }
+
+  // Generate tokens
+  const tokens = generateUserTokens(user);
+
+  return {
+    user,
+    ...tokens,
+  };
+};
+
 const refreshToken = async (token: string) => {
   // Verify Refresh Token
   const verifiedToken = jwt.verify(
@@ -123,7 +175,8 @@ const refreshToken = async (token: string) => {
 };
 
 export const AuthService = {
-  registerUser,
-  loginUser,
+  registerUserWithCredentials,
+  loginUserWithCredentials,
   refreshToken,
+  loginOrRegisterUserWithSocials,
 };

@@ -11,9 +11,7 @@ const router = express.Router();
 // Register a new user
 router.post(
   "/register",
-
   validateRequest(AuthValidation.registerValidationSchema),
-
   AuthController.registerUser,
 );
 
@@ -22,6 +20,13 @@ router.post(
   "/login",
   validateRequest(AuthValidation.loginValidationSchema),
   AuthController.loginUser,
+);
+
+// Login or register user with socials
+router.post(
+  "/login-or-register-with-socials",
+  validateRequest(AuthValidation.loginOrRegisterWithSocialsValidationSchema),
+  AuthController.loginOrRegisterUserWithSocials,
 );
 
 // Refresh token

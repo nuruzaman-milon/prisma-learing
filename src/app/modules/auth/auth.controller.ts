@@ -6,7 +6,7 @@ import { AuthService } from "./auth.service";
 import AppError from "../../errors/AppError";
 
 const registerUser = catchAsync(async (req: Request, res: Response) => {
-  const result = await AuthService.registerUser(req.body);
+  const result = await AuthService.registerUserWithCredentials(req.body);
 
   res.status(201).json({
     success: true,
@@ -16,12 +16,12 @@ const registerUser = catchAsync(async (req: Request, res: Response) => {
 });
 
 const loginUser = catchAsync(async (req: Request, res: Response) => {
-  const result = await AuthService.loginUser(req.body);
+  const result = await AuthService.loginUserWithCredentials(req.body);
 
   const { accessToken, refreshToken } = result;
 
   res.cookie("refreshToken", refreshToken, {
-    secure: false, // in production, set this to true
+    secure: process.env.NODE_ENV === "production", // in production, set this to true
     httpOnly: true,
   });
 
@@ -33,6 +33,28 @@ const loginUser = catchAsync(async (req: Request, res: Response) => {
     },
   });
 });
+
+const loginOrRegisterUserWithSocials = catchAsync(
+  async (req: Request, res: Response) => {
+    const result = await AuthService.loginOrRegisterUserWithSocials(req.body);
+
+    const { user, accessToken, refreshToken } = result;
+
+    res.cookie("refreshToken", refreshToken, {
+      secure: process.env.NODE_ENV === "production", // in production, set this to true
+      httpOnly: true,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "User logged in successfully",
+      data: {
+        user,
+        accessToken,
+      },
+    });
+  },
+);
 
 const refreshToken = catchAsync(async (req: Request, res: Response) => {
   const token = req.cookies.refreshToken;
@@ -52,7 +74,7 @@ const refreshToken = catchAsync(async (req: Request, res: Response) => {
 
 const logoutUser = catchAsync(async (req: Request, res: Response) => {
   res.clearCookie("refreshToken", {
-    secure: false, // in production, set this to true
+    secure: process.env.NODE_ENV === "production", // in production, set this to true
     httpOnly: true,
   });
 
@@ -67,4 +89,5 @@ export const AuthController = {
   loginUser,
   refreshToken,
   logoutUser,
+  loginOrRegisterUserWithSocials,
 };
