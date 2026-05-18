@@ -66,6 +66,17 @@ const getMe = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const updateProfile = async (req: Request, res: Response) => {
+  console.log(req.file);
+
+  console.log(req.body);
+
+  res.status(200).json({
+    success: true,
+    message: "Profile updated successfully",
+  });
+};
+
 export const UserController = {
   createUser,
   getAllUsers,
@@ -73,6 +84,7 @@ export const UserController = {
   updateUser,
   deleteUser,
   getMe,
+  updateProfile,
 };
 
 // notes

@@ -6,6 +6,7 @@ import { UserController } from "./user.controller";
 
 import { UserValidation } from "./user.validation";
 import auth from "../../middlewares/auth";
+import { upload } from "../../config/multer.config";
 
 const router = express.Router();
 
@@ -23,6 +24,12 @@ router.get("/", UserController.getAllUsers);
 
 // Get a single user by ID
 router.get("/:id", UserController.getSingleUser);
+
+router.patch(
+  "/update-profile",
+  upload.single("file"),
+  UserController.updateProfile,
+);
 
 // Update a user by ID
 router.patch(
