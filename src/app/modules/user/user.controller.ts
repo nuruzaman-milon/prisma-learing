@@ -67,7 +67,7 @@ const getMe = catchAsync(async (req: Request, res: Response) => {
 });
 
 const updateProfile = async (req: Request, res: Response) => {
-  console.log(req.file);
+  console.log(req.files);
 
   console.log(req.body);
 
