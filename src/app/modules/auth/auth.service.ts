@@ -5,6 +5,7 @@ import AppError from "../../errors/AppError";
 import { prisma } from "../../../prisma/prisma";
 import type { AuthProvider } from "../../../../generated/prisma/enums";
 import { generateUserTokens } from "../../utils/generateUsersTokens";
+import sendEmail from "../../utils/sendEmail";
 
 const registerUserWithCredentials = async (payload: {
   name?: string;
@@ -39,7 +40,76 @@ const registerUserWithCredentials = async (payload: {
     },
   });
 
+  console.log(
+    "process.env.JWT_VERIFY_SECRET in register",
+    process.env.JWT_VERIFY_SECRET,
+  );
+
+  const verificationToken = jwt.sign(
+    {
+      email: result.email,
+    },
+
+    process.env.JWT_VERIFY_SECRET as string,
+
+    {
+      expiresIn: "1d",
+    },
+  );
+
+  const verificationLink = `http://localhost:5000/api/auth/verify-email?token=${verificationToken}`;
+
+  await sendEmail(
+    result.email,
+
+    "Verify Your Email",
+
+    `
+    <h1>Email Verification</h1>
+
+    <p>
+      Click below to verify your account
+    </p>
+
+    <a href="${verificationLink}">
+      Verify Account
+    </a>
+  `,
+  );
+
   return result;
+};
+
+const verifyEmail = async (token: string) => {
+  const decoded = jwt.verify(
+    token,
+    process.env.JWT_VERIFY_SECRET as string,
+  ) as JwtPayload;
+
+  console.log(
+    "process.env.JWT_VERIFY_SECRET in verify",
+    process.env.JWT_VERIFY_SECRET,
+  );
+
+  const user = await prisma.user.findUnique({
+    where: {
+      email: decoded.email,
+    },
+  });
+
+  if (!user) {
+    throw new AppError(404, "User not found");
+  }
+
+  await prisma.user.update({
+    where: {
+      email: user.email,
+    },
+
+    data: {
+      isVerified: true,
+    },
+  });
 };
 
 const loginUserWithCredentials = async (payload: {
@@ -60,6 +130,10 @@ const loginUserWithCredentials = async (payload: {
 
   if (!isUserExists) {
     throw new AppError(404, "User not found!");
+  }
+
+  if (!isUserExists.isVerified) {
+    throw new AppError(401, "Please verify your email");
   }
 
   //compare password
@@ -179,4 +253,5 @@ export const AuthService = {
   loginUserWithCredentials,
   refreshToken,
   loginOrRegisterUserWithSocials,
+  verifyEmail,
 };

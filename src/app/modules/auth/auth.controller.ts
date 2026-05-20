@@ -84,10 +84,23 @@ const logoutUser = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const verifyEmail = catchAsync(async (req: Request, res: Response) => {
+  const token = req.query.token as string;
+
+  await AuthService.verifyEmail(token);
+
+  res.status(200).json({
+    success: true,
+
+    message: "Email verified successfully",
+  });
+});
+
 export const AuthController = {
   registerUser,
   loginUser,
   refreshToken,
   logoutUser,
   loginOrRegisterUserWithSocials,
+  verifyEmail,
 };

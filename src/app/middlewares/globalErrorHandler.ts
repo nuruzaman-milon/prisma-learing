@@ -13,6 +13,8 @@ const globalErrorHandler: ErrorRequestHandler = (error, req, res, next) => {
     message = error.message;
   }
 
+  console.log(error);
+
   res.status(statusCode).json({
     success: false,
     message,

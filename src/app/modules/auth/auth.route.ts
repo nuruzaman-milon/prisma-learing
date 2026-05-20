@@ -35,4 +35,6 @@ router.post("/refresh-token", AuthController.refreshToken);
 // Logout user
 router.post("/logout", AuthController.logoutUser);
 
+router.get("/verify-email", AuthController.verifyEmail);
+
 export const AuthRoutes = router;

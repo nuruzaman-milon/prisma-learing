@@ -1,4 +1,3 @@
-import type { Prisma } from "../../../../generated/prisma/client";
 import { prisma } from "../../../prisma/prisma";
 import QueryBuilder from "../../builder/QueryBuilder";
 import cloudinary from "../../config/cloudinary.config";
