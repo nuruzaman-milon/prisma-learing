@@ -8,6 +8,7 @@ import AppError from "../errors/AppError";
 const auth =
   (...requiredRoles: string[]) =>
   async (req: Request, res: Response, next: NextFunction) => {
+    console.log("auth middleware hit");
     const token = req.headers.authorization;
 
     if (!token) {

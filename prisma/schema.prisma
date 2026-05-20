@@ -58,6 +58,7 @@ model Profile {
   country             String?
   profession          String?
   profilePhoto        String?
+  profilePhotoPublicId String?
   website             String?
   github              String?
   linkedin            String?

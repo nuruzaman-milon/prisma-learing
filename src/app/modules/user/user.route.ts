@@ -27,12 +27,14 @@ router.get("/:id", UserController.getSingleUser);
 
 router.patch(
   "/update-profile",
+  auth(),
+  upload.single("avatar"),
   // upload.array("images", 5),
-  upload.fields([
-    { name: "avatar", maxCount: 1 },
+  // upload.fields([
+  //   { name: "avatar", maxCount: 1 },
 
-    { name: "documents", maxCount: 5 },
-  ]),
+  //   { name: "documents", maxCount: 5 },
+  // ]),
   UserController.updateProfile,
 );
 

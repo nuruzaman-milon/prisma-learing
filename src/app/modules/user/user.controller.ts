@@ -66,16 +66,27 @@ const getMe = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-const updateProfile = async (req: Request, res: Response) => {
-  console.log(req.files);
+const updateProfile = catchAsync(async (req: Request, res: Response) => {
+  console.log("hitttt");
+  console.log(req.file);
 
   console.log(req.body);
+  console.log("req.user", req.user.userId);
+
+  const result = await UserService.updateProfile(
+    req.user.userId,
+    req.body,
+    req.file,
+  );
+
+  console.log("result", result);
 
   res.status(200).json({
     success: true,
     message: "Profile updated successfully",
+    data: result,
   });
-};
+});
 
 export const UserController = {
   createUser,
