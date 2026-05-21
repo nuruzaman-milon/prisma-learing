@@ -1,6 +1,7 @@
 import { prisma } from "../../../prisma/prisma";
 import QueryBuilder from "../../builder/QueryBuilder";
 import cloudinary from "../../config/cloudinary.config";
+import redisClient from "../../config/redis.config";
 import AppError from "../../errors/AppError";
 import fs from "fs-extra";
 
@@ -63,8 +64,18 @@ const createUser = async (payload: {
 };
 
 const getAllUsers = async (query: Record<string, unknown>) => {
-  console.log("hit get all users");
+  // Check cache first
+  const cachedUsers = await redisClient.get("all-users");
 
+  if (cachedUsers) {
+    console.log("Data coming from Redis cache");
+
+    return JSON.parse(cachedUsers);
+  }
+
+  console.log("Data coming from Database");
+
+  // DB query
   const queryBuilder = new QueryBuilder(
     {
       where: {
@@ -79,11 +90,12 @@ const getAllUsers = async (query: Record<string, unknown>) => {
     .sort()
     .fields();
 
-  console.log("query builder", queryBuilder);
-
   const result = await prisma.user.findMany(queryBuilder.modelQuery);
-  console.log("result", result);
 
+  // Save into Redis
+  await redisClient.set("all-users", JSON.stringify(result), {
+    EX: 60, // 1 minute
+  });
   return result;
 };
 

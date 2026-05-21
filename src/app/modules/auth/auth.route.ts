@@ -5,6 +5,8 @@ import validateRequest from "../../middlewares/validateRequest";
 import { AuthController } from "./auth.controller";
 
 import { AuthValidation } from "./auth.validation";
+import auth from "../../middlewares/auth";
+import { loginLimiter, otpLimiter } from "../../middlewares/rateLimiter";
 
 const router = express.Router();
 
@@ -18,6 +20,7 @@ router.post(
 // Login an existing user
 router.post(
   "/login",
+  loginLimiter,
   validateRequest(AuthValidation.loginValidationSchema),
   AuthController.loginUser,
 );
@@ -39,5 +42,13 @@ router.get("/verify-email", AuthController.verifyEmail);
 
 router.post("/forgot-password", AuthController.forgotPassword);
 router.post("/reset-password", AuthController.resetPassword);
+router.post(
+  "/change-password",
+  auth("USER", "ADMIN"),
+  AuthController.changePassword,
+);
+
+router.post("/send-otp", otpLimiter, AuthController.sendOTP);
+router.post("/verify-otp", AuthController.verifyOTP);
 
 export const AuthRoutes = router;

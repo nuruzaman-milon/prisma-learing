@@ -118,6 +118,40 @@ const resetPassword = catchAsync(async (req, res) => {
   });
 });
 
+const changePassword = catchAsync(async (req, res) => {
+  const result = await AuthService.changePassword(
+    req.user.userId,
+    req.body.oldPassword,
+    req.body.newPassword,
+  );
+
+  res.status(200).json({
+    success: true,
+    message: "Password changed successfully",
+    data: result,
+  });
+});
+
+const sendOTP = catchAsync(async (req, res) => {
+  const { email } = req.body;
+  await AuthService.sendOTP(email);
+  res.status(200).json({
+    success: true,
+    message: "OTP sent successfully",
+  });
+});
+
+const verifyOTP = catchAsync(async (req, res) => {
+  const { email, otp } = req.body;
+
+  await AuthService.verifyOTP(email, otp);
+
+  res.status(200).json({
+    success: true,
+    message: "OTP verified successfully",
+  });
+});
+
 export const AuthController = {
   registerUser,
   loginUser,
@@ -127,4 +161,7 @@ export const AuthController = {
   loginOrRegisterUserWithSocials,
   verifyEmail,
   resetPassword,
+  changePassword,
+  sendOTP,
+  verifyOTP,
 };

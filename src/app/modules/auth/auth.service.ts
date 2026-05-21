@@ -6,6 +6,7 @@ import { prisma } from "../../../prisma/prisma";
 import type { AuthProvider } from "../../../../generated/prisma/enums";
 import { generateUserTokens } from "../../utils/generateUsersTokens";
 import sendEmail from "../../utils/sendEmail";
+import redisClient from "../../config/redis.config";
 
 const registerUserWithCredentials = async (payload: {
   name?: string;
@@ -324,6 +325,119 @@ const resetPassword = async (
   });
 };
 
+const changePassword = async (
+  userId: number,
+  oldPassword: string,
+  newPassword: string,
+) => {
+  // Find user
+  const user = await prisma.user.findUnique({
+    where: {
+      id: userId,
+    },
+  });
+
+  if (!user) {
+    throw new AppError(404, "User not found");
+  }
+
+  /**
+   * CASE 1:
+   * Credentials user
+   * ----------------
+   * password exists
+   * must verify old password
+   */
+  if (user.password) {
+    const isOldPasswordMatched = await bcrypt.compare(
+      oldPassword,
+      user.password,
+    );
+
+    if (!isOldPasswordMatched) {
+      throw new AppError(401, "Old password is incorrect");
+    }
+  }
+
+  /**
+   * CASE 2:
+   * Social login user
+   * ------------------
+   * password doesn't exist
+   * skip old password verification
+   */
+
+  // Hash new password
+  const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+  // Update password
+  await prisma.user.update({
+    where: {
+      id: user.id,
+    },
+
+    data: {
+      password: hashedPassword,
+      // Optional:
+      // convert hybrid account support
+      authProvider: "CREDENTIALS",
+    },
+  });
+  return null;
+};
+
+const sendOTP = async (email: string) => {
+  // Generate 6 digit OTP
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+  // Store OTP in Redis
+  await redisClient.set(
+    `otp:${email}`,
+
+    otp,
+
+    {
+      EX: 300,
+    },
+  );
+
+  // Send email
+  await sendEmail(
+    email,
+    "Your OTP Code",
+    `
+      <h1>${otp}</h1>
+
+      <p>
+        OTP valid for 5 minutes
+      </p>
+    `,
+  );
+  console.log("Generated OTP:", otp);
+};
+
+const verifyOTP = async (
+  email: string,
+
+  otp: string,
+) => {
+  // Get OTP from Redis
+  const storedOTP = await redisClient.get(`otp:${email}`);
+
+  // OTP expired or missing
+  if (!storedOTP) {
+    throw new AppError(400, "OTP expired");
+  }
+
+  // OTP mismatch
+  if (storedOTP !== otp) {
+    throw new AppError(401, "Invalid OTP");
+  }
+
+  // Delete OTP after success
+  await redisClient.del(`otp:${email}`);
+};
+
 export const AuthService = {
   registerUserWithCredentials,
   loginUserWithCredentials,
@@ -332,4 +446,7 @@ export const AuthService = {
   verifyEmail,
   forgotPassword,
   resetPassword,
+  changePassword,
+  sendOTP,
+  verifyOTP,
 };
