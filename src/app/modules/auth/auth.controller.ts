@@ -96,11 +96,35 @@ const verifyEmail = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const forgotPassword = catchAsync(async (req, res) => {
+  await AuthService.forgotPassword(req.body.email);
+
+  res.status(200).json({
+    success: true,
+
+    message: "Password reset email sent",
+  });
+});
+
+const resetPassword = catchAsync(async (req, res) => {
+  const { token, newPassword } = req.body;
+
+  await AuthService.resetPassword(token, newPassword);
+
+  res.status(200).json({
+    success: true,
+
+    message: "Password reset successful",
+  });
+});
+
 export const AuthController = {
   registerUser,
   loginUser,
   refreshToken,
+  forgotPassword,
   logoutUser,
   loginOrRegisterUserWithSocials,
   verifyEmail,
+  resetPassword,
 };

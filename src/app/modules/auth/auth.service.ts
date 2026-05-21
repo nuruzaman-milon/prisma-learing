@@ -248,10 +248,88 @@ const refreshToken = async (token: string) => {
   };
 };
 
+const forgotPassword = async (email: string) => {
+  const user = await prisma.user.findUnique({
+    where: {
+      email,
+    },
+  });
+
+  if (!user) {
+    throw new AppError(404, "User not found");
+  }
+
+  // Generate reset token
+  const resetToken = jwt.sign(
+    {
+      email: user.email,
+    },
+    process.env.JWT_RESET_PASSWORD_SECRET as string,
+    {
+      expiresIn: "15m",
+    },
+  );
+
+  // Reset link
+  const resetLink = `http://localhost:3000/reset-password?token=${resetToken}`;
+
+  // Send email
+  await sendEmail(
+    user.email,
+    "Reset Your Password",
+    `
+      <h1>Reset Password</h1>
+
+      <a href="${resetLink}">
+        Reset Password
+      </a>
+    `,
+  );
+};
+
+const resetPassword = async (
+  token: string,
+
+  newPassword: string,
+) => {
+  // Verify token
+  const decoded = jwt.verify(
+    token,
+    process.env.JWT_RESET_PASSWORD_SECRET as string,
+  ) as JwtPayload;
+
+  // Find user
+  const user = await prisma.user.findUnique({
+    where: {
+      email: decoded.email,
+    },
+  });
+
+  if (!user) {
+    throw new AppError(404, "User not found");
+  }
+
+  // Hash new password
+  const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+  // Update password
+  await prisma.user.update({
+    where: {
+      email: user.email,
+    },
+
+    data: {
+      password: hashedPassword,
+    },
+  });
+};
+
 export const AuthService = {
   registerUserWithCredentials,
   loginUserWithCredentials,
   refreshToken,
   loginOrRegisterUserWithSocials,
   verifyEmail,
+  forgotPassword,
+  resetPassword,
 };
